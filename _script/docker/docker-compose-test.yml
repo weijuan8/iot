@@ -1,0 +1,84 @@
+name: iot-system
+
+networks:
+  default:
+    name: iot-system-local_iot-local-net
+    external: true
+
+services:
+  mysql:
+    container_name: iot-mysql
+    image: mysql:8
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: shihe_back
+      MYSQL_ROOT_PASSWORD: 123456
+    volumes:
+      - mysql:/var/lib/mysql/
+
+  redis:
+    container_name: iot-redis
+    image: redis:6-alpine
+    restart: unless-stopped
+    command:
+      - redis-server
+      - --requirepass
+      - DYcyTyuOFRagfyYav5K43sl
+      - --appendonly
+      - "yes"
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis:/data
+
+  emqx:
+    container_name: iot-emqx
+    image: emqx/emqx:5.8.0
+    restart: unless-stopped
+    ports:
+      - "30007:1883"
+      - "30008:8083"
+      - "8084:8084"
+      - "8883:8883"
+      - "30005:18083"
+    environment:
+      TZ: "Asia/Shanghai"
+      EMQX_Dashboard__Default_Username: "admin"
+      EMQX_Dashboard__Default_Password: "public"
+    volumes:
+      - emqx-data:/opt/emqx/data
+      - emqx-log:/opt/emqx/log
+
+  tdengine:
+    image: tdengine/tdengine:3.3.3.0
+    container_name: eiot-server-td
+    ports:
+      - "6030:6030"
+      - "6041:6041"
+      - "6043:6043"
+      - "6044-6049:6044-6049"
+      - "6044-6045:6044-6045/udp"
+      - "30006:6060"
+    environment:
+      TAOS_USER: root
+      TAOS_PASSWORD: taosdata
+    volumes:
+      - tdengine_lib:/var/lib/taos
+      - tdengine_log:/var/log/taos
+
+volumes:
+  mysql:
+    driver: local
+  redis:
+    driver: local
+  tdengine_lib:
+    driver: local
+  tdengine_log:
+    driver: local
+  emqx-data:
+    driver: local
+  emqx-log:
+    driver: local

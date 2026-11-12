@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!-- 引用 Spring Boot 的 logback 基础配置 -->
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    <!-- 变量 platform.info.base-package，基础业务包 -->
+    <springProperty scope="context" name="platform.info.base-package" source="platform.info.base-package"/>
+    <!-- 应用名，用于日志文件命名 -->
+    <springProperty scope="context" name="APP_NAME" source="spring.application.name" defaultValue="iot-server"/>
+
+    <!--
+        日志根目录：默认「jar 包所在目录/log」。
+        部署脚本先 cd 到 jar 目录再启动，所以相对路径 ./log 即为 jar 同级目录；
+        如需自定义，可加 JVM 参数 -Dlog.home=/data/log 或环境变量 log.home。
+    -->
+    <property name="LOG_HOME" value="${log.home:-./log}"/>
+    <!-- 单个日志文件的最大大小，超过则按大小切分出新文件 -->
+    <property name="LOG_MAX_FILE_SIZE" value="${log.max-file-size:-50MB}"/>
+    <!-- 日志最大保留天数，超期文件（含日期子目录）自动删除 -->
+    <property name="LOG_MAX_HISTORY" value="${log.max-history:-30}"/>
+
+    <!-- 格式化输出：%d 表示日期，%thread 表示线程名，%X{tid} SkyWalking 链路追踪编号，%level 级别，%msg 日志消息，%n 换行符 -->
+    <property name="PATTERN_DEFAULT"
+              value="%d{${LOG_DATEFORMAT_PATTERN:-yyyy-MM-dd HH:mm:ss.SSS}} | %highlight(${LOG_LEVEL_PATTERN:-%5p} ${PID:- }) | %boldYellow(%thread [%tid]) %boldGreen(%-40.40logger{39}) | %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}"/>
+
+    <!-- 控制台 Appender -->
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">　　　　　
+        <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
+            <layout class="org.apache.skywalking.apm.toolkit.log.logback.v1.x.TraceIdPatternLogbackLayout">
+                <pattern>${PATTERN_DEFAULT}</pattern>
+            </layout>
+        </encoder>
+    </appender>
+
+    <!--
+        ① 全量日志：所有级别（INFO/WARN/ERROR...）
+        归档目录形如：log/2026-09-15/iot-server-2026-09-15.0.log.gz
+    -->
+    <appender name="FILE_ALL" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
+            <layout class="org.apache.skywalking.apm.toolkit.log.logback.v1.x.TraceIdPatternLogbackLayout">
+                <pattern>${PATTERN_DEFAULT}</pattern>
+            </layout>
+        </encoder>
+        <!-- 当前正在写入的文件 -->
+        <file>${LOG_HOME}/${APP_NAME}.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <!-- 归档文件名：按日期分目录 + 文件名带日期 + 按大小切分序号 + gzip 压缩 -->
+            <fileNamePattern>${LOG_HOME}/%d{yyyy-MM-dd}/${APP_NAME}-%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <!-- 单文件超过该大小即切分 -->
+            <maxFileSize>${LOG_MAX_FILE_SIZE}</maxFileSize>
+            <!-- 保留天数（按日期目录整体清理） -->
+            <maxHistory>${LOG_MAX_HISTORY}</maxHistory>
+            <!-- 0 表示不限制归档总大小 -->
+            <totalSizeCap>0</totalSizeCap>
+            <!-- 启动时不清理历史 -->
+            <cleanHistoryOnStart>false</cleanHistoryOnStart>
+        </rollingPolicy>
+    </appender>
+
+    <!--
+        ② WARN 日志：仅 WARN 级别
+        归档目录形如：log/2026-09-15/iot-server-warn-2026-09-15.0.log.gz
+    -->
+    <appender name="FILE_WARN" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>WARN</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+        <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
+            <layout class="org.apache.skywalking.apm.toolkit.log.logback.v1.x.TraceIdPatternLogbackLayout">
+                <pattern>${PATTERN_DEFAULT}</pattern>
+            </layout>
+        </encoder>
+        <file>${LOG_HOME}/${APP_NAME}-warn.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_HOME}/%d{yyyy-MM-dd}/${APP_NAME}-warn-%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>${LOG_MAX_FILE_SIZE}</maxFileSize>
+            <maxHistory>${LOG_MAX_HISTORY}</maxHistory>
+            <totalSizeCap>0</totalSizeCap>
+            <cleanHistoryOnStart>false</cleanHistoryOnStart>
+        </rollingPolicy>
+    </appender>
+
+    <!--
+        ③ ERROR 日志：仅 ERROR 级别
+        归档目录形如：log/2026-09-15/iot-server-error-2026-09-15.0.log.gz
+    -->
+    <appender name="FILE_ERROR" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>ERROR</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+        <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
+            <layout class="org.apache.skywalking.apm.toolkit.log.logback.v1.x.TraceIdPatternLogbackLayout">
+                <pattern>${PATTERN_DEFAULT}</pattern>
+            </layout>
+        </encoder>
+        <file>${LOG_HOME}/${APP_NAME}-error.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_HOME}/%d{yyyy-MM-dd}/${APP_NAME}-error-%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>${LOG_MAX_FILE_SIZE}</maxFileSize>
+            <maxHistory>${LOG_MAX_HISTORY}</maxHistory>
+            <totalSizeCap>0</totalSizeCap>
+            <cleanHistoryOnStart>false</cleanHistoryOnStart>
+        </rollingPolicy>
+    </appender>
+
+    <!-- 异步写入日志，提升性能。discardingThreshold=0 表示队列满也不丢弃日志 -->
+    <appender name="ASYNC_ALL" class="ch.qos.logback.classic.AsyncAppender">
+        <discardingThreshold>0</discardingThreshold>
+        <queueSize>1024</queueSize>
+        <appender-ref ref="FILE_ALL"/>
+    </appender>
+    <appender name="ASYNC_WARN" class="ch.qos.logback.classic.AsyncAppender">
+        <discardingThreshold>0</discardingThreshold>
+        <queueSize>1024</queueSize>
+        <appender-ref ref="FILE_WARN"/>
+    </appender>
+    <appender name="ASYNC_ERROR" class="ch.qos.logback.classic.AsyncAppender">
+        <discardingThreshold>0</discardingThreshold>
+        <queueSize>1024</queueSize>
+        <appender-ref ref="FILE_ERROR"/>
+    </appender>
+
+    <!-- SkyWalking GRPC 日志收集，实现日志中心。注意：SkyWalking 8.4.0 版本开始支持 -->
+    <appender name="GRPC" class="org.apache.skywalking.apm.toolkit.log.logback.v1.x.log.GRPCLogClientAppender">
+        <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
+            <layout class="org.apache.skywalking.apm.toolkit.log.logback.v1.x.TraceIdPatternLogbackLayout">
+                <pattern>${PATTERN_DEFAULT}</pattern>
+            </layout>
+        </encoder>
+    </appender>
+
+    <!-- 本地环境 -->
+    <springProfile name="local">
+        <root level="INFO">
+            <appender-ref ref="STDOUT"/>
+            <appender-ref ref="ASYNC_ALL"/>
+            <appender-ref ref="ASYNC_WARN"/>
+            <appender-ref ref="ASYNC_ERROR"/>
+            <appender-ref ref="GRPC"/> <!-- 本地环境下，如果不想接入 SkyWalking 日志服务，可以注释掉本行 -->
+        </root>
+    </springProfile>
+    <!-- 其它环境 -->
+    <springProfile name="dev,test,stage,prod,default,eiot,remote">
+        <root level="INFO">
+            <appender-ref ref="STDOUT"/>
+            <appender-ref ref="ASYNC_ALL"/>
+            <appender-ref ref="ASYNC_WARN"/>
+            <appender-ref ref="ASYNC_ERROR"/>
+            <appender-ref ref="GRPC"/>
+        </root>
+    </springProfile>
+</configuration>

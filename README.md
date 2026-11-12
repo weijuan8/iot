@@ -1,0 +1,158 @@
+<p align="center">
+ <img src="https://img.shields.io/badge/Spring%20Boot-2.7.18-blue.svg" alt="Downloads">
+ <img src="https://img.shields.io/badge/Vue-3.2-blue.svg" alt="Downloads">
+</p>
+
+
+## 平台简介
+
+【enjoy-iot】为乐飞智联旗下开源物联网平台，系列产品推荐：[乐飞无人机智巡平台](https://gitee.com/open-enjoy/uavs)
+
+> 有任何问题，或者想要的功能，可以在 _Issues_ 中提交。
+>
+> 😜 给项目点点 Star 吧，这对我们真的很重要！
+
+### 平台通用基础功能
+* 基于若依通用后台管理系统开发
+* 采用 Spring Boot 多模块架构、MySQL + MyBatis Plus、Redis + Redisson
+* 数据库默认使用 MySQL，其它数据库后续进行适配
+* 消息队列可使用 Event、Redis、RabbitMQ、Kafka、RocketMQ 等
+* 权限认证使用 Spring Security & Token & Redis，支持多终端、多种用户的认证系统，支持 SSO 单点登录
+* 支持加载动态权限菜单，按钮级别权限控制，Redis 缓存提升性能
+* 高效率开发，使用代码生成器可以一键生成 Java、Vue 前后端代码、SQL 脚本、接口文档，支持单表、树表、主子表
+* 集成阿里云、腾讯云等短信渠道，集成 MinIO、阿里云、腾讯云、七牛云等云存储服务
+
+### 平台物联网功能
+* 品类管理-树型结构品类管理，内置常见物联网设备品类
+* 产品管理-提供产品基本信息设置、物模型定义、产品发布管理、数据解析等
+* 设备管理-基础管理功能（注册、分组、标签等）、运行监控、远程控制、安全管理、数据管理等
+* 设备接入-提供mqtt/http/modbus/udp/coap等常见协议接入、设备认证、接入配置、连接管理、OTA等
+* 组件中心-基于Spring Boot的设备协议接入模块，可实现动态配置、多实例独立部署
+* 规则引擎-数据处理规则、触发条件、执行动作、规则配置、运行管理、场景应用等
+* 告警中心-告警规则配置、告警通知、告警处理、告警监控、告警联动等
+* 数据管理-提供实时数据存储、历史数据时序数据库存储、数据查询分析、数据推送等
+* 另提供可视化大屏、第三方平台对接、视频接入、无人机接入、AI算法集成等功能
+
+
+
+## 后端模块说明
+
+| 模块 | 说明 |
+|------|------|
+| **dependencies** | BOM 依赖管理，统一管理所有第三方库版本号 |
+| **framework/common** | 基础工具类：POJO、枚举、JSON/日期/集合工具、异常定义、校验注解、分页参数 |
+| **framework/spring-boot-starter-web** | Web 框架：全局异常处理、API 日志、数据脱敏、XSS 防护、Swagger/Knife4j 文档 |
+| **framework/spring-boot-starter-security** | 安全框架：用户认证、Token 验证、权限校验、操作日志记录 |
+| **framework/spring-boot-starter-mybatis** | 数据库：Druid 连接池、多数据源、MyBatis-Plus 拓展、多数据库支持（MySQL/Oracle/PG 等）、数据翻译 |
+| **framework/spring-boot-starter-redis** | Redis 封装：Redisson 集成、Spring Cache 配置 |
+| **framework/spring-boot-starter-mq** | 消息队列抽象：支持 Redis Stream/PubSub、RocketMQ、RabbitMQ、Kafka 四种中间件 |
+| **framework/spring-boot-starter-websocket** | WebSocket 框架：多节点广播、会话管理、安全认证 |
+| **framework/spring-boot-starter-monitor** | 服务监控：链路追踪（SkyWalking）、Prometheus 指标、Spring Boot Admin |
+| **framework/spring-boot-starter-protection** | 服务保障：分布式锁（Lock4j+Redisson）、幂等性、限流、API 签名 |
+| **framework/spring-boot-starter-job** | 定时任务：Quartz 封装、Spring Async 异步任务 |
+| **framework/spring-boot-starter-excel** | Excel 导入导出：基于 FastExcel，支持字典转换 |
+| **framework/spring-boot-starter-test** | 测试组件：H2 内存数据库、Mockito、单元测试基类 |
+| **framework/spring-boot-starter-biz-tenant** | 多租户：租户上下文、数据库/Redis/MQ 隔离、定时任务租户支持 |
+| **framework/spring-boot-starter-biz-data-permission** | 数据权限：基于注解的部门数据权限拦截 |
+| **framework/spring-boot-starter-biz-ip** | IP 工具：IP 地址转城市信息（ip2region） |
+| **server** | 主启动模块，Spring Boot 应用入口，打包为可执行 jar |
+| **module-system** | 系统通用业务：用户/角色/菜单/部门/岗位管理、字典、通知、短信、OAuth2 登录、租户管理、操作日志等 |
+| **module-infra** | 基础设施模块：代码生成器、文件存储、定时任务管理、API 日志、系统配置 |
+| **module-eiot** | 物联网核心业务：品类/产品/设备管理、设备接入（MQTT/HTTP/Modbus/UDP/CoAP 等协议）、规则引擎、告警中心、数据管理、可视化大屏、物模型、设备影子、OTA 升级等 |
+| **module-ai** | AI 模块：智能体管理、模型配置、AI 设备支持 |
+
+### 前端仓库
+[![乐联开源/enjoy-web](https://gitee.com/open-enjoy/enjoy-web/widgets/widget_card.svg?colors=393222,ebdfc1,fffae5,d8ca9f,393222,a28b40)](https://gitee.com/open-enjoy/enjoy-web)
+
+### 界面展示
+<img alt="wx.png" src=".image/dashboard.png" width="600">
+<img alt="wx.png" src=".image/devices.png" width="600"/>
+<img alt="wx.png" src=".image/device_alert.png" width="600"/>
+<img alt="wx.png" src=".image/product.png" width="600"/>
+<img alt="wx.png" src=".image/rule.png" width="600"/>
+<img alt="wx.png" src=".image/rule_action.png" width="600"/>
+<img alt="wx.png" src=".image/alarm_conf.png" width="600"/>
+
+
+### 无人机智巡平台
+![输入图片说明](.image/ScreenShot_2026-03-19_194559_346.png)
+
+
+### 文档
+
+在线文档：[https://y5yrmmjjns.feishu.cn/wiki/M7Fgw1DX2iCbKNk5ucDcZ5mhnfd](https://y5yrmmjjns.feishu.cn/wiki/M7Fgw1DX2iCbKNk5ucDcZ5mhnfd)
+
+演示系统：见微信群公告
+
+### 近期开发计划
+#### 1. AI设备支持
+1. 智能体管理
+2. 模型配置
+
+
+### 开源之星活动
+
+快来参与开源活动,有现金奖励哦!!!
+https://y5yrmmjjns.feishu.cn/wiki/PsPEwXms0iJEayk88Wgc4xH1nob?fromScene=spaceOverview
+
+<img alt="wx.png" src=".image/image.png" width="600"/>
+
+#### 提交pr
+请提交到dev-jdk21分支
+
+####  git 提交规范
+示例: 
+feat(xiot):新增jt808协议支持
+```angular2html
+feat：新功能（feature）
+fix：修补bug
+docs：文档（documentation）
+style： 格式（不影响代码运行的变动）
+refactor：重构（即不是新增功能，也不是修改bug的代码变动）
+test：增加测试
+chore：杂项,构建过程或辅助工具的变动,如更新依赖库
+perf: 性能优化
+test: 添加或修改测试
+build: 构建系统或外部依赖项的变更
+ci: 持续集成配置的变更
+revert: 回滚
+```
+
+## 联系我们
+
+ 乐联开源商务及技术联系
+
+ **添加微信，备注：进群/商务咨询**
+
+<img alt="wx.png" height="300" src=".image/wx.png" width="250"/>
+
+
+开源版：代码完全开源；
+> 如果您将此项目用于商业用途，请遵守 Apache2.0 协议并保留作者技术支持声明。
+>
+> 二次开发如用于商业性质或开源竞品请不要删除和修改源码头部的版权与作者声明及出处
+>
+> 允许进行商用，但是不允许二次开源出来并进行收费
+
+商业版：可移除作者署名
+https://y5yrmmjjns.feishu.cn/wiki/FlxmwXzQJiEKCJkGuIhcLsyjnwh?fromScene=spaceOverview 
+
+## :fa-chain-broken: 友情链接
+
+  :fa-star:  **乐飞无人机智巡平台** ([https://gitee.com/open-enjoy/uavs](https://gitee.com/open-enjoy/uavs))
+
+  :fa-star:    **MyEMS能源管理系统** ([https://gitee.com/myems/myems](https://gitee.com/myems/myems))
+
+  :+1:  **数据可视化**([https://gitee.com/xiaopujun/light-chaser](https://gitee.com/xiaopujun/light-chaser))  [官网](http://www.lcpdesigner.cn/home)
+
+  :fa-star:    **现代化文件管理网盘系统** ([https://gitee.com/xddcode/free-fs](https://gitee.com/xddcode/free-fs))
+
+
+# 更新日志
+
+## v1.0.0
+|  功能 | 更新内容 | 开发者  | 时间         |
+|  ---- | ---- |------|------------|
+|  设备影子 | 添加设备影子功能 | 庞宏   | 2026-04-26 |
+|  设备告警 | 添加设备告警功能 | song | 2026-04-26 |
+|  首页 | 添加设备地图 | song | 2026-04-26 |

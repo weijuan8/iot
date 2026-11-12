@@ -1,0 +1,283 @@
+ server:
+  port: 30011                # 正式环境 API 端口（仅本机监听，外部由 nginx 反代 admin-api 域名过来）
+  # 仅监听本机，外部访问统一走 nginx 反代（admin-api 域名 → 127.0.0.1:30011）
+  # 注意：配置后 30011 将无法从公网直接访问，部署前需先配好 nginx；如需临时直连测试可注释本行
+  address: 127.0.0.1
+
+--- #################### 数据库相关配置 ####################
+spring:
+  autoconfigure:
+    exclude:
+      # 排除 Quartz 自动配置：本项目未使用 infra_job 定时任务，排除后 Quartz 整体处于禁用状态
+      - org.springframework.boot.autoconfigure.quartz.QuartzAutoConfiguration
+      - de.codecentric.boot.admin.server.config.AdminServerAutoConfiguration
+      - de.codecentric.boot.admin.server.ui.config.AdminServerUiAutoConfiguration
+      - de.codecentric.boot.admin.client.config.SpringBootAdminClientAutoConfiguration
+
+  datasource:
+    druid:
+      web-stat-filter:
+        enabled: true
+      stat-view-servlet:
+        enabled: false          # 正式环境关闭 Druid 监控台，避免无鉴权暴露（如需开启请设置 login-username/login-password）
+        allow:
+        url-pattern: /druid/*
+        login-username:
+        login-password:
+      filter:
+        stat:
+          enabled: true         # 开启慢 SQL 统计（超过 slow-sql-millis 记录）
+          log-slow-sql: true
+          slow-sql-millis: 100
+          merge-sql: true
+        wall:
+          config:
+            multi-statement-allow: true
+    dynamic:
+      druid:
+        initial-size: 1
+        min-idle: 1
+        max-active: 20
+        keep-alive: true
+        max-wait: 10000
+        # 超时回收死链接
+        remove-abandoned: true
+        remove-abandoned-timeout: 300
+        log-abandoned: true
+        # 定时回收超时链接
+        time-between-eviction-runs-millis: 60000
+        min-evictable-idle-time-millis: 300000
+        max-evictable-idle-time-millis: 900000
+        validation-query: SELECT 1 FROM DUAL
+        test-while-idle: true
+        test-on-borrow: true
+        test-on-return: false
+      primary: master
+      datasource:
+        master:
+          # 服务在宿主机运行，通过 docker 映射端口连接 localhost:3306
+          # 正式专用库：shihe-prod（与测试库 shihe 相互隔离）
+          url: jdbc:mysql://119.45.251.129:30015/shihe-prod?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&rewriteBatchedStatements=true&socketTimeout=15000&connectTimeout=3000
+          username: shihe-prod
+          password: 8XkcrwE5PYXySLZa
+        slave:
+          lazy: true
+          url: jdbc:mysql://119.45.251.129:30015/shihe-prod?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&rewriteBatchedStatements=true&socketTimeout=15000&connectTimeout=3000
+          username: shihe-prod
+          password: 8XkcrwE5PYXySLZa
+
+  # Redis（宿主机 localhost:6379，对应 docker-compose 映射端口）
+  # password：加了 requirepass 后的密码，测试/正式共用同一 Redis 实例、同一密码
+  data:
+    redis:
+      port: 6379
+      database: 9              # Redis 库索引：测试用 8、正式用 9，实现两套环境 Key 隔离
+      host: localhost
+      password: DYcyTyuOFRagfyYav5K43sl
+
+--- #################### 定时任务 ####################
+# 注意：项目已在 spring.autoconfigure.exclude 中排除 QuartzAutoConfiguration，
+# 因此这里的 Quartz（infra_job 表驱动的）定时任务实际处于【禁用】状态，以下配置不生效。
+# 真正在运行的是 Spring @Scheduled 任务（见代码，不受本段控制）。
+# 同机部署测试+正式两套实例时，@Scheduled 任务会在两边各跑一次，注意重复执行问题。
+spring:
+  quartz:
+    auto-startup: false       # 正式环境默认不启动 infra_job 定时任务；如需运行改为 true（测试环境务必保持 false，避免两边重复执行）
+    scheduler-name: schedulerName
+    job-store-type: memory
+    wait-for-jobs-to-complete-on-shutdown: true
+    properties:
+      org:
+        quartz:
+          scheduler:
+            instanceName: schedulerName
+            instanceId: AUTO
+          threadPool:
+            threadCount: 10
+
+  # TDengine（宿主机 localhost:6041，对应 docker-compose 中 eiot-server-td 映射端口）
+  # 测试与正式共用同一个 TDengine 实例，但走不同的库：
+  #   - 测试库：eiot        （application-test.yml）
+  #   - 正式库：eiot_prod   （本文件）
+  # 同实例多库的好处：节省内存和磁盘，运维只维护一个 TDengine 容器。
+  td-datasource:
+    url: jdbc:TAOS-RS://localhost:6041/eiot_prod?timezone=UTC-8&charset=UTF-8&locale=en_US.UTF-8
+    db: eiot_prod
+    username: root
+    password: taosdata
+    driverClassName: com.taosdata.jdbc.rs.RestfulDriver
+
+  # 以下数据源（IoTDB / Postgres / KaiwuDB / Elasticsearch）本项目未使用，保持默认即可
+  iotdb-datasource:
+    url: 127.0.0.1:6667
+    username:
+    password:
+    baseDb: root.eiot
+
+  postgres:
+    driverClassName: org.postgresql.Driver
+    url: jdbc:postgresql://127.0.0.1:5432/enjoyiot
+    username: postgres
+    password: postgres
+
+  kw-datasource:
+    driverClassName: com.kaiwudb.Driver
+    url: jdbc:kaiwudb://127.0.0.1:26257/ts_enjoyiot
+    username: root
+    password:
+
+  elasticsearch:
+    rest:
+      uris: http://127.0.0.1:9200
+      username:
+      password:
+      connection-timeout: 10s
+
+--- #################### 消息队列 ####################
+# 以下 MQ（RocketMQ / RabbitMQ / Kafka）本项目未使用，eiot 消息走 spring-event 本地事件，保持默认即可
+rocketmq:
+  name-server: iot-emqx:9876
+
+spring:
+  rabbitmq:
+    host: iot-emqx
+    port: 5672
+    username: guest
+    password: guest
+  kafka:
+    bootstrap-servers: 127.0.0.1:9092
+
+--- #################### 外部访问端口说明 ####################
+# EMQX MQTT:      iot-emqx:1883   → 外部 30007
+# EMQX Dashboard: iot-emqx:18083  → 外部 30005 (http://IP:30005, admin/public)
+# TDengine:        eiot-server-td:6060 → 外部 30006
+
+--- #################### 服务保障 ####################
+lock4j:                        # 分布式锁：获取锁最长等待 3s，锁默认过期 30s
+  acquire-timeout: 3000
+  expire: 30000
+
+--- #################### 监控 ####################
+management:
+  endpoints:
+    web:
+      base-path: /actuator
+      exposure:
+        include: health,info    # 正式环境不暴露全部 actuator 端点，仅保留健康检查
+
+--- #################### 日志 ####################
+logging:
+  level:
+    # 正式环境关闭 SQL debug 日志（debug 会让日志文件暴涨），统一用 info
+    com.enjoyiot.module.eiot.dal.mysql: info
+    com.enjoyiot.module.infra.dal.mysql: info
+    com.enjoyiot.module.system.dal.mysql: info
+
+debug: false
+
+--- #################### 微信公众号、小程序相关配置 ####################
+# TODO: 以下为【测试环境】的公众号/小程序参数，正式上线前请替换为正式环境的 AppID、Secret
+wx:
+  mp:
+    app-id: wx5b23ba7a5589ecbb
+    secret: 2a7b3b20c537e52e74afd395eb85f61f
+    config-storage:              # 微信 access_token 等缓存配置（存 Redis，key 前缀 wx）
+      type: RedisTemplate
+      key-prefix: wx
+      http-client-type: HttpClient
+  miniapp:
+    appid: wx66186af0759f47c9
+    secret: 3218bcbd112cbc614c7264ceb20144ac
+    config-storage:              # 小程序缓存配置（存 Redis，key 前缀 wa）
+      type: RedisTemplate
+      key-prefix: wa
+      http-client-type: HttpClient
+
+--- #################### 平台配置 ####################
+platform:
+  captcha:
+    enable: false          # 关闭图片验证码（系统未使用验证码）
+  security:
+    mock-enable: false     # 正式环境关闭 mock 登录（安全风险）
+  pay:
+    # 支付回调地址：使用本机地址，外部支付平台需能访问到（正式上线需换成公网域名）
+    order-notify-url: http://${server.address:127.0.0.1}:${server.port}/admin-api/pay/notify/order
+    refund-notify-url: http://${server.address:127.0.0.1}:${server.port}/admin-api/pay/notify/refund
+    transfer-notify-url: http://${server.address:127.0.0.1}:${server.port}/admin-api/pay/notify/transfer
+  access-log:
+    enable: true           # 开启接口访问日志
+  demo: false              # 关闭演示模式
+  wxa-code:
+    env-version: release   # 小程序码使用正式版环境
+  wxa-subscribe-message:
+    miniprogram-state: formal # 订阅消息跳转正式版小程序（developer=开发版，trial=体验版）
+  tencent-lbs-key: TVDBZ-TDILD-4ON4B-PFDZA-RNLKH-VVF6E # 腾讯位置服务 key（正式/测试共用，如需区分请更换）
+
+# TODO: 以下为【测试环境】的钉钉/企微登录凭据，正式上线前请替换为正式凭据
+justauth:
+  enabled: true
+  type:
+    DINGTALK:
+      client-id: dingvrnreaje3yqvzhxg
+      client-secret: i8E6iZyDvZj51JIb0tYsYfVQYOks9Cq1lgryEjFRqC79P3iJcrxEwT6Qk2QvLrLI
+      ignore-check-redirect-uri: true
+    WECHAT_ENTERPRISE:
+      client-id: wwd411c69a39ad2e54
+      client-secret: 1wTb7hYxnpT2TUbIeHGXGo7T0odav1ic10mLdyyATOw
+      agent-id: 1000004
+      ignore-check-redirect-uri: true
+    WECHAT_MINI_APP:
+      client-id: ${wx.miniapp.appid}
+      client-secret: ${wx.miniapp.secret}
+      ignore-check-redirect-uri: true
+      ignore-check-state: true
+    WECHAT_MP:
+      client-id: ${wx.mp.app-id}
+      client-secret: ${wx.mp.secret}
+      ignore-check-redirect-uri: true
+  cache:
+    type: REDIS
+    prefix: 'social_auth_state:'
+    timeout: 24h
+
+--- #################### iot 相关 ####################
+iot:
+  event-bus:
+    kafka:
+      boostrap-servers: 127.0.0.1:9092
+
+config:
+  alert:
+    sms-provider: aliyun     # 告警短信服务商
+
+eiot:
+  message:
+    producer-type: spring-event # eiot 消息生产类型：走本地 Spring 事件（非 MQ）
+
+--- #################### 正式环境安全加固（相对 application.yaml 覆盖）####################
+# 关闭接口文档（Swagger / Knife4j），避免公网暴露 API 文档
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+knife4j:
+  enable: false
+
+# 开启 XSS 过滤
+platform:
+  xss:
+    enable: true
+  # TODO: 正式环境域名确定后，把管理后台地址改为正式域名（当前沿用 application.yaml 的 dashboard.enjoy-iot.cn）
+  # web:
+  #   admin-ui:
+  #     url: http://admin.paizhi-ai.com
+
+# 正式环境与测试共用 TDengine 的 eiot 库（表结构已初始化），无需重复初始化
+# 若后续给正式环境单独建了 TDengine 库，首次启动请改为 true
+init:
+  data:
+    flag: false
+
+
+

@@ -1,0 +1,235 @@
+server:
+  port: 30010
+
+--- #################### 数据库相关配置 ####################
+spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.quartz.QuartzAutoConfiguration
+      - de.codecentric.boot.admin.server.config.AdminServerAutoConfiguration
+      - de.codecentric.boot.admin.server.ui.config.AdminServerUiAutoConfiguration
+      - de.codecentric.boot.admin.client.config.SpringBootAdminClientAutoConfiguration
+
+  datasource:
+    druid:
+      web-stat-filter:
+        enabled: true
+      stat-view-servlet:
+        enabled: true
+        allow:
+        url-pattern: /druid/*
+        login-username:
+        login-password:
+      filter:
+        stat:
+          enabled: true
+          log-slow-sql: true
+          slow-sql-millis: 100
+          merge-sql: true
+        wall:
+          config:
+            multi-statement-allow: true
+    dynamic:
+      druid:
+        initial-size: 1
+        min-idle: 1
+        max-active: 20
+        keep-alive: true
+        max-wait: 10000
+        # 超时回收死链接
+        remove-abandoned: true
+        remove-abandoned-timeout: 300
+        log-abandoned: true
+        # 定时回收超时链接
+        time-between-eviction-runs-millis: 60000
+        min-evictable-idle-time-millis: 300000
+        max-evictable-idle-time-millis: 900000
+        validation-query: SELECT 1 FROM DUAL
+        test-while-idle: true
+        test-on-borrow: true
+        test-on-return: false
+      primary: master
+      datasource:
+        master:
+          # 服务在宿主机运行，通过 docker 映射端口连接 localhost:3306
+          url: jdbc:mysql://119.45.251.129:30015/shihe?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&rewriteBatchedStatements=true&socketTimeout=15000&connectTimeout=3000
+          username: shihe
+          password: fnfDDLcAeZrW6z5j
+        slave:
+          lazy: true
+          url: jdbc:mysql://119.45.251.129:30015/shihe?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&nullCatalogMeansCurrent=true&rewriteBatchedStatements=true&socketTimeout=15000&connectTimeout=3000
+          username: shihe
+          password: fnfDDLcAeZrW6z5j
+
+  # Redis（宿主机 localhost:6379，对应 docker-compose 映射端口）
+  data:
+    redis:
+      port: 6379
+      database: 8
+      host: localhost
+      password: DYcyTyuOFRagfyYav5K43sl
+
+--- #################### 定时任务 ####################
+spring:
+  quartz:
+    auto-startup: false       # 测试环境关闭定时任务
+    scheduler-name: schedulerName
+    job-store-type: memory
+    wait-for-jobs-to-complete-on-shutdown: true
+    properties:
+      org:
+        quartz:
+          scheduler:
+            instanceName: schedulerName
+            instanceId: AUTO
+          threadPool:
+            threadCount: 10
+
+  # TDengine（宿主机 localhost:6041，对应 docker-compose 中 eiot-server-td 映射端口）
+  td-datasource:
+    url: jdbc:TAOS-RS://localhost:6041/eiot?timezone=UTC-8&charset=UTF-8&locale=en_US.UTF-8
+    db: eiot
+    username: root
+    password: taosdata
+    driverClassName: com.taosdata.jdbc.rs.RestfulDriver
+
+  iotdb-datasource:
+    url: 127.0.0.1:6667
+    username:
+    password:
+    baseDb: root.eiot
+
+  postgres:
+    driverClassName: org.postgresql.Driver
+    url: jdbc:postgresql://127.0.0.1:5432/enjoyiot
+    username: postgres
+    password: postgres
+
+  kw-datasource:
+    driverClassName: com.kaiwudb.Driver
+    url: jdbc:kaiwudb://127.0.0.1:26257/ts_enjoyiot
+    username: root
+    password:
+
+  elasticsearch:
+    rest:
+      uris: http://127.0.0.1:9200
+      username:
+      password:
+      connection-timeout: 10s
+
+--- #################### 消息队列 ####################
+rocketmq:
+  name-server: iot-emqx:9876
+
+spring:
+  rabbitmq:
+    host: iot-emqx
+    port: 5672
+    username: guest
+    password: guest
+  kafka:
+    bootstrap-servers: 127.0.0.1:9092
+
+--- #################### 外部访问端口说明 ####################
+# EMQX MQTT:      iot-emqx:1883   → 外部 30007
+# EMQX Dashboard: iot-emqx:18083  → 外部 30005 (http://IP:30005, admin/public)
+# TDengine:        eiot-server-td:6060 → 外部 30006
+
+--- #################### 服务保障 ####################
+lock4j:
+  acquire-timeout: 3000
+  expire: 30000
+
+--- #################### 监控 ####################
+management:
+  endpoints:
+    web:
+      base-path: /actuator
+      exposure:
+        include: '*'
+
+--- #################### 日志 ####################
+logging:
+  level:
+    com.enjoyiot.module.eiot.dal.mysql: debug
+    com.enjoyiot.module.infra.dal.mysql: debug
+    com.enjoyiot.module.system.dal.mysql: debug
+
+debug: false
+
+--- #################### 微信公众号、小程序相关配置 ####################
+wx:
+  mp:
+    app-id: wx5b23ba7a5589ecbb
+    secret: 2a7b3b20c537e52e74afd395eb85f61f
+    config-storage:
+      type: RedisTemplate
+      key-prefix: wx
+      http-client-type: HttpClient
+  miniapp:
+    appid: wx66186af0759f47c9
+    secret: 3218bcbd112cbc614c7264ceb20144ac
+    config-storage:
+      type: RedisTemplate
+      key-prefix: wa
+      http-client-type: HttpClient
+
+--- #################### 平台配置 ####################
+platform:
+  captcha:
+    enable: false
+  security:
+    mock-enable: true
+  pay:
+    order-notify-url: http://${server.address:127.0.0.1}:${server.port}/admin-api/pay/notify/order
+    refund-notify-url: http://${server.address:127.0.0.1}:${server.port}/admin-api/pay/notify/refund
+    transfer-notify-url: http://${server.address:127.0.0.1}:${server.port}/admin-api/pay/notify/transfer
+  access-log:
+    enable: true
+  demo: false
+  wxa-code:
+    env-version: develop
+  wxa-subscribe-message:
+    miniprogram-state: developer
+  tencent-lbs-key: TVDBZ-TDILD-4ON4B-PFDZA-RNLKH-VVF6E
+
+justauth:
+  enabled: true
+  type:
+    DINGTALK:
+      client-id: dingvrnreaje3yqvzhxg
+      client-secret: i8E6iZyDvZj51JIb0tYsYfVQYOks9Cq1lgryEjFRqC79P3iJcrxEwT6Qk2QvLrLI
+      ignore-check-redirect-uri: true
+    WECHAT_ENTERPRISE:
+      client-id: wwd411c69a39ad2e54
+      client-secret: 1wTb7hYxnpT2TUbIeHGXGo7T0odav1ic10mLdyyATOw
+      agent-id: 1000004
+      ignore-check-redirect-uri: true
+    WECHAT_MINI_APP:
+      client-id: ${wx.miniapp.appid}
+      client-secret: ${wx.miniapp.secret}
+      ignore-check-redirect-uri: true
+      ignore-check-state: true
+    WECHAT_MP:
+      client-id: ${wx.mp.app-id}
+      client-secret: ${wx.mp.secret}
+      ignore-check-redirect-uri: true
+  cache:
+    type: REDIS
+    prefix: 'social_auth_state:'
+    timeout: 24h
+
+--- #################### iot 相关 ####################
+iot:
+  event-bus:
+    kafka:
+      boostrap-servers: 127.0.0.1:9092
+
+config:
+  alert:
+    sms-provider: aliyun
+
+eiot:
+  message:
+    producer-type: spring-event

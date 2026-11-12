@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.enjoy-iot</groupId>
+        <artifactId>module-ai</artifactId>
+        <version>${revision}</version>
+    </parent>
+
+    <artifactId>module-ai-biz</artifactId>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <dependencies>
+
+        <dependency>
+            <groupId>com.enjoy-iot</groupId>
+            <artifactId>module-ai-api</artifactId>
+            <version>${revision}</version>
+        </dependency>
+
+        <!-- 参数配置（读取在线配置的 AI 提示词，避免改提示词重新发版） -->
+        <dependency>
+            <groupId>com.enjoy-iot</groupId>
+            <artifactId>module-infra-api</artifactId>
+            <version>${revision}</version>
+        </dependency>
+
+        <!-- 设备/塘口数据查询（只读使用 eiot 的 Mapper 与 Api，AI 模块不涉及多租户） -->
+        <dependency>
+            <groupId>com.enjoy-iot</groupId>
+            <artifactId>module-eiot-biz</artifactId>
+            <version>${revision}</version>
+        </dependency>
+
+        <!-- 时序数据（TDengine）查询接口 -->
+        <dependency>
+            <groupId>com.enjoy-iot</groupId>
+            <artifactId>iot-temporal-service</artifactId>
+            <version>${revision}</version>
+        </dependency>
+
+        <!-- TDengine 实现（仅用其 TdTemplate 做 SQL 下推按日聚合，不修改原实现） -->
+        <dependency>
+            <groupId>com.enjoy-iot</groupId>
+            <artifactId>iot-temporal-serviceimpl-td</artifactId>
+            <version>${revision}</version>
+        </dependency>
+
+        <!-- 业务组件 -->
+        <dependency>
+            <groupId>com.enjoy-iot</groupId>
+            <artifactId>spring-boot-starter-biz-data-permission</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.enjoy-iot</groupId>
+            <artifactId>spring-boot-starter-biz-tenant</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.enjoy-iot</groupId>
+            <artifactId>spring-boot-starter-biz-ip</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.enjoy-iot</groupId>
+            <artifactId>spring-boot-starter-excel</artifactId>
+        </dependency>
+
+        <!-- Web 相关 -->
+        <dependency>
+            <groupId>com.enjoy-iot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+
+    </dependencies>
+
+</project>
